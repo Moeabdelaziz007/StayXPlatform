@@ -1,11 +1,13 @@
 import { 
   users, type User, type InsertUser,
   connections, type Connection, type InsertConnection,
-  messages, type Message, type InsertMessage,
+  messages, type Message, type InsertMessage, 
   activities, type Activity, type InsertActivity,
   achievements, type Achievement, type InsertAchievement,
   userAchievements, type UserAchievement, type InsertUserAchievement
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, or, desc, sql, like } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -51,328 +53,303 @@ export interface IStorage {
   calculateMatchScore(user1Id: number, user2Id: number): Promise<number>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private connections: Map<number, Connection>;
-  private messages: Map<number, Message>;
-  private activities: Map<number, Activity>;
-  private achievements: Map<number, Achievement>;
-  private userAchievements: Map<number, UserAchievement>;
-  
-  private userIdCounter: number;
-  private connectionIdCounter: number;
-  private messageIdCounter: number;
-  private activityIdCounter: number;
-  private achievementIdCounter: number;
-  private userAchievementIdCounter: number;
-
-  constructor() {
-    this.users = new Map();
-    this.connections = new Map();
-    this.messages = new Map();
-    this.activities = new Map();
-    this.achievements = new Map();
-    this.userAchievements = new Map();
-    
-    this.userIdCounter = 1;
-    this.connectionIdCounter = 1;
-    this.messageIdCounter = 1;
-    this.activityIdCounter = 1;
-    this.achievementIdCounter = 1;
-    this.userAchievementIdCounter = 1;
-    
-    // Initialize with some achievements
-    this.initializeAchievements();
-  }
-
-  private initializeAchievements() {
-    const defaultAchievements: InsertAchievement[] = [
-      {
-        name: "Early Adopter",
-        description: "Joined StayX in its early days",
-        icon: "ri-rocket-line",
-        points: 150,
-        category: "profile"
-      },
-      {
-        name: "Network Starter",
-        description: "Made your first connection",
-        icon: "ri-user-add-line",
-        points: 50,
-        category: "social"
-      },
-      {
-        name: "Crypto Enthusiast",
-        description: "Added crypto-related interests to your profile",
-        icon: "ri-bitcoin-line",
-        points: 100,
-        category: "crypto"
-      }
-    ];
-
-    defaultAchievements.forEach(achievement => {
-      this.createAchievement(achievement);
-    });
-  }
-
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByFirebaseId(firebaseId: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.firebaseId === firebaseId);
+    const [user] = await db.select().from(users).where(eq(users.firebaseId, firebaseId));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const now = new Date();
-    const newUser: User = {
-      ...user,
-      id,
-      createdAt: now,
-      lastActive: now
-    };
-    this.users.set(id, newUser);
+    const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }
 
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
-    const user = await this.getUser(id);
-    if (!user) return undefined;
-
-    const updatedUser: User = { ...user, ...userData, lastActive: new Date() };
-    this.users.set(id, updatedUser);
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...userData, lastActive: new Date() })
+      .where(eq(users.id, id))
+      .returning();
     return updatedUser;
   }
 
   async searchUsers(query: string, limit: number = 10): Promise<User[]> {
-    const lowercaseQuery = query.toLowerCase();
-    return Array.from(this.users.values())
-      .filter(user => 
-        user.username.toLowerCase().includes(lowercaseQuery) ||
-        user.displayName.toLowerCase().includes(lowercaseQuery) ||
-        (user.bio && user.bio.toLowerCase().includes(lowercaseQuery))
+    return db
+      .select()
+      .from(users)
+      .where(
+        or(
+          like(users.username, `%${query}%`),
+          like(users.displayName, `%${query}%`),
+          like(users.bio, `%${query}%`)
+        )
       )
-      .slice(0, limit);
+      .limit(limit);
   }
 
   // Connection operations
   async getConnection(id: number): Promise<Connection | undefined> {
-    return this.connections.get(id);
+    const [connection] = await db.select().from(connections).where(eq(connections.id, id));
+    return connection;
   }
 
   async getConnectionByUsers(senderId: number, receiverId: number): Promise<Connection | undefined> {
-    return Array.from(this.connections.values()).find(
-      conn => (conn.senderId === senderId && conn.receiverId === receiverId) ||
-              (conn.senderId === receiverId && conn.receiverId === senderId)
-    );
+    const [connection] = await db
+      .select()
+      .from(connections)
+      .where(
+        or(
+          and(
+            eq(connections.senderId, senderId),
+            eq(connections.receiverId, receiverId)
+          ),
+          and(
+            eq(connections.senderId, receiverId),
+            eq(connections.receiverId, senderId)
+          )
+        )
+      );
+    return connection;
   }
 
   async getUserConnections(userId: number, status?: string): Promise<Connection[]> {
-    return Array.from(this.connections.values()).filter(conn => 
-      (conn.senderId === userId || conn.receiverId === userId) &&
-      (!status || conn.status === status)
-    );
+    let query = db
+      .select()
+      .from(connections)
+      .where(
+        or(
+          eq(connections.senderId, userId),
+          eq(connections.receiverId, userId)
+        )
+      );
+
+    if (status) {
+      query = query.where(eq(connections.status, status));
+    }
+
+    return query.orderBy(desc(connections.updatedAt));
   }
 
   async createConnection(connection: InsertConnection): Promise<Connection> {
-    const id = this.connectionIdCounter++;
-    const now = new Date();
-    const newConnection: Connection = {
-      ...connection,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.connections.set(id, newConnection);
+    const [newConnection] = await db
+      .insert(connections)
+      .values(connection)
+      .returning();
     return newConnection;
   }
 
   async updateConnection(id: number, status: string): Promise<Connection | undefined> {
-    const connection = await this.getConnection(id);
-    if (!connection) return undefined;
-
-    const updatedConnection: Connection = { 
-      ...connection, 
-      status, 
-      updatedAt: new Date() 
-    };
-    
-    this.connections.set(id, updatedConnection);
+    const [updatedConnection] = await db
+      .update(connections)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(connections.id, id))
+      .returning();
     return updatedConnection;
   }
 
   // Message operations
   async getMessage(id: number): Promise<Message | undefined> {
-    return this.messages.get(id);
+    const [message] = await db.select().from(messages).where(eq(messages.id, id));
+    return message;
   }
 
   async getConversation(user1Id: number, user2Id: number, limit: number = 50): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(msg => 
-        (msg.senderId === user1Id && msg.receiverId === user2Id) ||
-        (msg.senderId === user2Id && msg.receiverId === user1Id)
+    return db
+      .select()
+      .from(messages)
+      .where(
+        or(
+          and(
+            eq(messages.senderId, user1Id),
+            eq(messages.receiverId, user2Id)
+          ),
+          and(
+            eq(messages.senderId, user2Id),
+            eq(messages.receiverId, user1Id)
+          )
+        )
       )
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-      .slice(-limit);
+      .orderBy(desc(messages.createdAt))
+      .limit(limit);
   }
 
   async getUserMessages(userId: number, limit: number = 50): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(msg => msg.senderId === userId || msg.receiverId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, limit);
+    return db
+      .select()
+      .from(messages)
+      .where(
+        or(
+          eq(messages.senderId, userId),
+          eq(messages.receiverId, userId)
+        )
+      )
+      .orderBy(desc(messages.createdAt))
+      .limit(limit);
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const id = this.messageIdCounter++;
-    const newMessage: Message = {
-      ...message,
-      id,
-      createdAt: new Date()
-    };
-    this.messages.set(id, newMessage);
+    const [newMessage] = await db
+      .insert(messages)
+      .values(message)
+      .returning();
     return newMessage;
   }
 
   async markMessageAsRead(id: number): Promise<Message | undefined> {
-    const message = await this.getMessage(id);
-    if (!message) return undefined;
-
-    const updatedMessage: Message = { ...message, read: true };
-    this.messages.set(id, updatedMessage);
+    const [updatedMessage] = await db
+      .update(messages)
+      .set({ read: true })
+      .where(eq(messages.id, id))
+      .returning();
     return updatedMessage;
   }
 
   // Activity operations
   async getActivity(id: number): Promise<Activity | undefined> {
-    return this.activities.get(id);
+    const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    return activity;
   }
 
   async getUserActivities(userId: number, limit: number = 20): Promise<Activity[]> {
-    return Array.from(this.activities.values())
-      .filter(activity => activity.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, limit);
+    return db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, userId))
+      .orderBy(desc(activities.createdAt))
+      .limit(limit);
   }
 
   async createActivity(activity: InsertActivity): Promise<Activity> {
-    const id = this.activityIdCounter++;
-    const newActivity: Activity = {
-      ...activity,
-      id,
-      createdAt: new Date()
-    };
-    this.activities.set(id, newActivity);
+    const [newActivity] = await db
+      .insert(activities)
+      .values(activity)
+      .returning();
     return newActivity;
   }
 
   // Achievement operations
   async getAchievement(id: number): Promise<Achievement | undefined> {
-    return this.achievements.get(id);
+    const [achievement] = await db.select().from(achievements).where(eq(achievements.id, id));
+    return achievement;
   }
 
   async getAllAchievements(): Promise<Achievement[]> {
-    return Array.from(this.achievements.values());
+    return db.select().from(achievements);
   }
 
   async createAchievement(achievement: InsertAchievement): Promise<Achievement> {
-    const id = this.achievementIdCounter++;
-    const newAchievement: Achievement = {
-      ...achievement,
-      id
-    };
-    this.achievements.set(id, newAchievement);
+    const [newAchievement] = await db
+      .insert(achievements)
+      .values(achievement)
+      .returning();
     return newAchievement;
   }
 
   // User Achievement operations
   async getUserAchievement(userId: number, achievementId: number): Promise<UserAchievement | undefined> {
-    return Array.from(this.userAchievements.values()).find(
-      ua => ua.userId === userId && ua.achievementId === achievementId
-    );
+    const [userAchievement] = await db
+      .select()
+      .from(userAchievements)
+      .where(
+        and(
+          eq(userAchievements.userId, userId),
+          eq(userAchievements.achievementId, achievementId)
+        )
+      );
+    return userAchievement;
   }
 
   async getUserAchievements(userId: number): Promise<UserAchievement[]> {
-    return Array.from(this.userAchievements.values())
-      .filter(ua => ua.userId === userId);
+    return db
+      .select()
+      .from(userAchievements)
+      .where(eq(userAchievements.userId, userId));
   }
 
   async createUserAchievement(userAchievement: InsertUserAchievement): Promise<UserAchievement> {
-    const id = this.userAchievementIdCounter++;
-    const newUserAchievement: UserAchievement = {
-      ...userAchievement,
-      id,
-      earnedAt: new Date()
-    };
-    this.userAchievements.set(id, newUserAchievement);
-    
-    // Update user's achievement points
-    const achievement = await this.getAchievement(userAchievement.achievementId);
-    if (achievement) {
-      const user = await this.getUser(userAchievement.userId);
-      if (user) {
-        await this.updateUser(user.id, {
-          achievementPoints: (user.achievementPoints || 0) + achievement.points
-        });
-      }
-    }
-    
+    const [newUserAchievement] = await db
+      .insert(userAchievements)
+      .values(userAchievement)
+      .returning();
     return newUserAchievement;
   }
 
   // AI/Recommendation operations
   async getRecommendedConnections(userId: number, limit: number = 10): Promise<{ user: User; matchScore: number }[]> {
-    const currentUser = await this.getUser(userId);
-    if (!currentUser) return [];
-
-    const userConnections = await this.getUserConnections(userId);
-    const connectedUserIds = userConnections.map(conn => 
-      conn.senderId === userId ? conn.receiverId : conn.senderId
+    // Get all users except the current user and exclude those who already have a connection
+    // First find existing connections
+    const existingConnections = await this.getUserConnections(userId);
+    const connectedUserIds = new Set(
+      existingConnections.map(conn => 
+        conn.senderId === userId ? conn.receiverId : conn.senderId
+      )
     );
-
-    // Get users who are not connected to the current user
-    const potentialConnections = Array.from(this.users.values())
-      .filter(user => user.id !== userId && !connectedUserIds.includes(user.id));
-
+    
+    // Then find potential connections
+    const potentialUsers = await db
+      .select()
+      .from(users)
+      .where(
+        sql`${users.id} != ${userId} AND ${users.id} NOT IN (${Array.from(connectedUserIds).join(',') || 0})`
+      )
+      .limit(limit);
+    
+    // Calculate match scores for each potential connection
     const recommendations: { user: User; matchScore: number }[] = [];
-
-    for (const user of potentialConnections) {
+    
+    for (const user of potentialUsers) {
       const matchScore = await this.calculateMatchScore(userId, user.id);
       recommendations.push({ user, matchScore });
     }
-
-    // Sort by match score and limit
-    return recommendations
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, limit);
+    
+    // Sort by match score (descending)
+    return recommendations.sort((a, b) => b.matchScore - a.matchScore);
   }
 
   async calculateMatchScore(user1Id: number, user2Id: number): Promise<number> {
+    // Get both users
     const user1 = await this.getUser(user1Id);
     const user2 = await this.getUser(user2Id);
     
-    if (!user1 || !user2) return 0;
-
-    // Simple matching algorithm based on shared interests
-    // In a real application, this would be much more sophisticated
-    let score = 60; // Base score
+    if (!user1 || !user2) {
+      return 0;
+    }
     
-    // Add random factor for demo purposes (this would be a real AI calculation in production)
-    score += Math.floor(Math.random() * 40);
+    // Simple scoring algorithm based on shared interests
+    const interests1 = new Set(user1.interests || []);
+    const interests2 = new Set(user2.interests || []);
     
-    // Cap at 100
-    return Math.min(score, 100);
+    let score = 0;
+    
+    // Calculate interest overlap
+    if (interests1.size > 0 && interests2.size > 0) {
+      const sharedInterests = [...interests1].filter(interest => interests2.has(interest));
+      score += (sharedInterests.length / Math.max(interests1.size, interests2.size)) * 70;
+    }
+    
+    // Add some randomness for discovery (0-30 points)
+    score += Math.floor(Math.random() * 30);
+    
+    // Return final score between 0-100
+    return Math.min(Math.round(score), 100);
   }
 }
 
-export const storage = new MemStorage();
+// Export a singleton instance of DatabaseStorage
+export const storage = new DatabaseStorage();
