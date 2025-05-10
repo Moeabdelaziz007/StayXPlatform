@@ -15,8 +15,8 @@ const GuestLoginButton = () => {
       console.error('Guest login error:', error);
       toast({
         variant: 'destructive',
-        title: 'فشل تسجيل الدخول',
-        description: 'حدث خطأ أثناء تسجيل الدخول كضيف. الرجاء المحاولة مرة أخرى.'
+        title: 'Guest Login Failed',
+        description: 'Error logging in as a guest. Please try again.'
       });
     } finally {
       setLoading(false);
@@ -30,7 +30,7 @@ const GuestLoginButton = () => {
       onClick={handleGuestLogin}
       disabled={loading}
     >
-      {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول كضيف'}
+      {loading ? 'Logging in...' : 'Login as Guest'}
     </Button>
   );
 };
