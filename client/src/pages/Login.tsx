@@ -5,10 +5,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, Info } from "lucide-react";
 
 const Login = () => {
-  const { user, loading, loginWithGoogle, loginAsGuest, loginWithGithub, loginWithTwitter } = useAuth();
+  const { user, loading, error, loginWithGoogle, loginAsGuest, loginWithGithub, loginWithTwitter } = useAuth();
   const [authLoading, setAuthLoading] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Redirect to home if user is already logged in
   if (user && !loading) {
@@ -17,10 +20,12 @@ const Login = () => {
   
   const handleGoogleLogin = async () => {
     try {
+      setLoginError(null);
       setAuthLoading(true);
       await loginWithGoogle();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google login error:", error);
+      setLoginError(error.message || "Failed to login with Google");
     } finally {
       setAuthLoading(false);
     }
@@ -28,10 +33,12 @@ const Login = () => {
   
   const handleGuestLogin = async () => {
     try {
+      setLoginError(null);
       setAuthLoading(true);
       await loginAsGuest();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Guest login error:", error);
+      setLoginError(error.message || "Failed to login as guest");
     } finally {
       setAuthLoading(false);
     }
@@ -39,10 +46,12 @@ const Login = () => {
   
   const handleGithubLogin = async () => {
     try {
+      setLoginError(null);
       setAuthLoading(true);
       await loginWithGithub();
-    } catch (error) {
+    } catch (error: any) {
       console.error("GitHub login error:", error);
+      setLoginError(error.message || "Failed to login with GitHub");
     } finally {
       setAuthLoading(false);
     }
@@ -50,14 +59,19 @@ const Login = () => {
   
   const handleTwitterLogin = async () => {
     try {
+      setLoginError(null);
       setAuthLoading(true);
       await loginWithTwitter();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Twitter login error:", error);
+      setLoginError(error.message || "Failed to login with Twitter");
     } finally {
       setAuthLoading(false);
     }
   };
+
+  // Check if error contains unauthorized domain message
+  const hasUnauthorizedDomainError = loginError && loginError.includes("unauthorized domain");
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#121212]">
@@ -77,11 +91,28 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div className="p-3 mb-3 border border-red-500 rounded-md bg-red-500/10 text-xs text-gray-light">
-            <p className="font-semibold">تنبيه: خطأ المجال غير المصرح به</p>
-            <p className="mt-1">لتمكين تسجيل الدخول بحساب Google، يجب إضافة هذا المجال إلى قائمة المجالات المصرح بها في إعدادات Firebase الخاصة بك.</p>
-            <p className="mt-1">المسار: Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains</p>
-          </div>
+          {(loginError || error) && (
+            <Alert variant="destructive" className="mb-3">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription>
+                {hasUnauthorizedDomainError ? (
+                  <div>
+                    <p>Your domain is not authorized for Firebase authentication.</p>
+                    <p className="mt-1 text-xs">You need to add your Replit domain to the authorized domains list in Firebase console:</p>
+                    <ol className="list-decimal pl-5 mt-1 text-xs">
+                      <li>Go to Firebase Console</li>
+                      <li>Select your project</li>
+                      <li>Go to Authentication &gt; Settings &gt; Authorized domains</li>
+                      <li>Add your Replit domain (e.g., yourapp.username.repl.co)</li>
+                    </ol>
+                  </div>
+                ) : (
+                  loginError || error
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             <Button 

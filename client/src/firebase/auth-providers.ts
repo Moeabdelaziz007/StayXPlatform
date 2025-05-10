@@ -37,8 +37,16 @@ export const signInWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
     trackUserLogin("google");
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error signing in with Google:", error);
+    
+    // Handle the specific unauthorized domain error
+    if (error.code === 'auth/unauthorized-domain') {
+      const message = "Your domain is not authorized for Firebase authentication. Please add your Replit domain to the Firebase console's authorized domains list.";
+      console.error(message);
+      throw new Error(message);
+    }
+    
     throw error;
   }
 };
