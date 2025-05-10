@@ -14,6 +14,7 @@ import Connections from "@/pages/Connections";
 import Messages from "@/pages/Messages";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import UIShowcase from "@/pages/UIShowcase";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/messages/:userId" component={Messages} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/ui" component={UIShowcase} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -100,6 +100,13 @@ const SideNavigation = () => {
             href="/analytics" 
             active={location === "/analytics"}
           />
+          
+          <NavItem 
+            icon="ri-palette-line" 
+            label="UI Showcase" 
+            href="/ui" 
+            active={location === "/ui"}
+          />
         </div>
       </nav>
       
