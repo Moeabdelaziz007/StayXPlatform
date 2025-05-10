@@ -138,7 +138,7 @@ export const suggestResponses = async (params: SuggestResponseParams): Promise<s
     return formattedSuggestions;
   } catch (error) {
     console.error('Error generating response suggestions:', error);
-    return Array(options).fill('Could not generate suggestions at this time.');
+    return Array(params.options || 3).fill('Could not generate suggestions at this time.');
   }
 };
 
@@ -184,8 +184,12 @@ export const generateInsights = async (params: GenerateInsightsParams): Promise<
     const text = response.text();
     
     // Parse the insights from the response
-    const insightPattern = /Title (\d+): (.*?)\nContent \d+: (.*?)(?=\n\nTitle \d+:|$)/gs;
-    const matches = Array.from(text.matchAll(insightPattern));
+    const insightPattern = new RegExp('Title (\\d+): (.*?)\\nContent \\d+: (.*?)(?=\\n\\nTitle \\d+:|$)', 'g');
+    const matches = [];
+    let match;
+    while ((match = insightPattern.exec(text)) !== null) {
+      matches.push(match);
+    }
     
     const insights = matches.map(match => ({
       title: match[2].trim(),
@@ -268,11 +272,24 @@ export const analyzeConnectionMatch = async (
     
     // Extract reasons
     const reasonsSection = text.split('Reasons:')[1]?.trim() || '';
-    const reasonsMatch = reasonsSection.match(/\d+\.\s+(.*?)(?=\d+\.|$)/gs);
     
-    const reasons = reasonsMatch 
-      ? reasonsMatch.map(reason => reason.replace(/^\d+\.\s+/, '').trim()) 
-      : ['Compatibility factors could not be determined'];
+    // Use a different approach to extract reasons
+    const reasons = [];
+    const reasonLines = reasonsSection.split('\n');
+    for (const line of reasonLines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine && /^\d+\./.test(trimmedLine)) {
+        const reason = trimmedLine.replace(/^\d+\.\s+/, '').trim();
+        if (reason) {
+          reasons.push(reason);
+        }
+      }
+    }
+    
+    // Ensure we have at least one reason
+    if (reasons.length === 0) {
+      reasons.push('Compatibility factors could not be determined');
+    }
     
     return {
       score: clampedScore,
