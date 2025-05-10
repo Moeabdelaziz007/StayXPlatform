@@ -2,16 +2,7 @@
 import { signInAnonymously } from "firebase/auth";
 import { auth } from "./firebase";
 
-export const signInAsGuest = async () => {
-  try {
-    const result = await signInAnonymously(auth);
-    trackUserLogin("guest");
-    return result;
-  } catch (error) {
-    console.error("Error signing in as guest:", error); // Log error details for easier debugging
-    throw error;
-  }
-};// client/src/components/auth/GuestLoginButton.tsx
+// client/src/components/auth/GuestLoginButton.tsx
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { signInAsGuest } from '@/firebase/auth-providers';
