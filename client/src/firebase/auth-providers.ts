@@ -37,7 +37,6 @@ const GuestLoginButton = () => {
       setLoading(false);
     }
   };
-
   return (
     <Button
       variant="outline"
@@ -45,12 +44,13 @@ const GuestLoginButton = () => {
       onClick={handleGuestLogin}
       disabled={loading}
     >
-      {loading ? 'Logging in...' : 'Login as Guest'}
+      {loading ? 'Logging in...' : 'Continue as Guest'}
     </Button>
   );
 };
+export default GuestLoginButton;
 
-export default GuestLoginButton;import { 
+import { 
   signInWithPopup, 
   GoogleAuthProvider, 
   signInAnonymously,
@@ -72,8 +72,7 @@ const githubProvider = new GithubAuthProvider();
 // Twitter Provider
 const twitterProvider = new TwitterAuthProvider();
 
-export const signInWithGoogle = async () => {
-  try {
+export const signInWithGoogle = async () => {<Component variant="example" /><Component variant="example"
     const result = await signInWithPopup(auth, googleProvider);
     trackUserLogin("google");
     return result;
