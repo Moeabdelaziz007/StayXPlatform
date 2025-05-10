@@ -61,11 +61,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+        try {
+          const userData = await response.json();
+          setUser(userData);
+        } catch (parseError) {
+          console.error("Error parsing user data JSON", parseError);
+          
+          // Log the response details for debugging
+          const responseText = await response.text();
+          console.error("Raw response:", responseText);
+          
+          setError("Failed to parse user data. Server returned invalid format.");
+          setUser(null);
+        }
       } else {
         // User might not exist in our backend yet
+        console.log(`API error: ${response.status} ${response.statusText}`);
         setUser(null);
+        
+        // If status is 404, user doesn't exist in database yet
+        if (response.status === 404) {
+          console.log("User not found in database. New user needs to be created.");
+        }
       }
     } catch (error) {
       console.error("Error fetching user data", error);

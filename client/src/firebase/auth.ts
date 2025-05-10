@@ -23,22 +23,41 @@ export const signInWithGoogle = async () => {
     
     // Check if the user exists in our backend
     try {
-      await apiRequest("GET", "/api/users/me");
-    } catch (error) {
-      // If user doesn't exist, create a new one
-      if (user.email && user.displayName) {
-        await apiRequest("POST", "/api/users", {
-          firebaseId: user.uid,
-          email: user.email,
-          username: user.email.split('@')[0], // Default username from email
-          displayName: user.displayName,
-          photoURL: user.photoURL || "",
-          bio: "",
-          level: 1,
-          achievementPoints: 0,
-          interests: []
-        });
+      // Make a direct fetch with proper headers instead of using apiRequest
+      const response = await fetch('/api/users/me', {
+        headers: {
+          'firebase-id': user.uid
+        }
+      });
+      
+      if (response.status === 404) {
+        console.log("User not found in backend, creating user...");
+        // If user doesn't exist, create a new one
+        if (user.email && user.displayName) {
+          try {
+            await apiRequest("POST", "/api/users", {
+              firebaseId: user.uid,
+              email: user.email,
+              username: user.email.split('@')[0], // Default username from email
+              displayName: user.displayName,
+              photoURL: user.photoURL || "",
+              bio: "",
+              level: 1,
+              achievementPoints: 0,
+              interests: []
+            });
+            console.log("User created successfully in backend");
+          } catch (createError) {
+            console.error("Failed to create user in backend:", createError);
+            // Continue anyway, as Firebase authentication succeeded
+          }
+        }
+      } else if (!response.ok) {
+        console.error(`API error: ${response.status} ${response.statusText}`);
       }
+    } catch (error) {
+      console.error("Error checking user in backend:", error);
+      // Continue anyway, as Firebase authentication succeeded
     }
     
     // Invalidate user data queries

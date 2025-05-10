@@ -2,8 +2,21 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    try {
+      // Try to get response text
+      const text = await res.text();
+      // If response is HTML (likely an error page), provide a clearer message
+      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        throw new Error(`Server error: ${res.status} ${res.statusText}. The server returned an HTML error page instead of JSON.`);
+      }
+      throw new Error(`${res.status}: ${text || res.statusText}`);
+    } catch (innerError) {
+      // If we can't read the response at all
+      if (innerError instanceof Error && innerError.message !== '') {
+        throw innerError;
+      }
+      throw new Error(`${res.status}: ${res.statusText}`);
+    }
   }
 }
 
@@ -38,7 +51,24 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    
+    try {
+      return await res.json();
+    } catch (error) {
+      console.error("Failed to parse JSON response", error);
+      
+      // Try to log the response text for debugging
+      try {
+        // We need to clone the response since it was already consumed
+        const clonedRes = res.clone();
+        const text = await clonedRes.text();
+        console.error("Response text that failed to parse:", text);
+      } catch (e) {
+        console.error("Could not get response text:", e);
+      }
+      
+      throw new Error("Invalid JSON response from server");
+    }
   };
 
 export const queryClient = new QueryClient({
