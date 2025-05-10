@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/firebase/auth";
+import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "wouter";
 
 const loginSchema = z.object({

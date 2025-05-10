@@ -77,6 +77,12 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          <div className="p-3 mb-3 border border-red-500 rounded-md bg-red-500/10 text-xs text-gray-light">
+            <p className="font-semibold">تنبيه: خطأ المجال غير المصرح به</p>
+            <p className="mt-1">لتمكين تسجيل الدخول بحساب Google، يجب إضافة هذا المجال إلى قائمة المجالات المصرح بها في إعدادات Firebase الخاصة بك.</p>
+            <p className="mt-1">المسار: Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains</p>
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <Button 
               variant="outline" 
