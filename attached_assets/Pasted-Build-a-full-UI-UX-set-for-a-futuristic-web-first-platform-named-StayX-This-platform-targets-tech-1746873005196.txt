@@ -1,0 +1,53 @@
+Build a full UI/UX set for a futuristic web-first platform named "StayX". This platform targets tech-savvy users interested in AI, crypto, and digital services. Follow the instructions below:
+
+1. **Theme**:
+   - Use **Dark Mode** as default.
+   - Primary accent color: **Neon Green (#39FF14)**
+   - Secondary colors: **Black (#0D0D0D)**, **Gray (#A9A9A9)**, **White (#FFFFFF)**
+   - Font: **Sans-serif**, preferably **Poppins** or **Inter**, bold for headers, regular for body.
+
+2. **Brand Logo**:
+   - Design a futuristic "X" symbol, clean and sharp, inspired by tech and crypto.
+   - Position logo top-left on all layouts, in neon green.
+
+3. **Pages to Include**:
+   - **Landing Page**:
+     - Hero section: “Stay Connected, Stay Ahead.”
+     - CTA button: “Get Started”
+     - Section: Upcoming Services (icons with "COMING SOON" labels)
+     - Section: AI-Powered Insights (with chart component)
+
+   - **Sign Up / Login Page**:
+     - Google login button
+     - Option to continue as guest
+     - Clean and minimal layout
+
+   - **Dashboard (for Logged-in Users)**:
+     - Sidebar menu: Home, Wallet, Services, Community, Profile
+     - Widgets: Account balance, Service status, AI Assistant
+     - Responsive and mobile-friendly layout
+
+   - **Community Page**:
+     - Chat UI layout (placeholder)
+     - Create / Join rooms (ChillRoom)
+
+   - **Services Page**:
+     - Cards for: Concierge, VIP Access, Car Rental, Nightlife, AI Support
+     - Status: Active or Coming Soon
+
+4. **UI Components**:
+   - Buttons, Modals, Input Fields, Cards, Tabs, Notifications
+   - All components must support dark mode with neon green highlights
+   - Use Tailwind CSS structure if applicable
+
+5. **Design Principles**:
+   - Keep it futuristic, minimal, and professional
+   - Prioritize readability and spacing
+   - All components should be WCAG 2.1 accessible
+   - Animate small interactions (button clicks, hover glows, toggle)
+
+6. **Output**:
+   - Generate in React.js with Tailwind CSS (if coding)
+   - Or generate a full Figma-style layout with reusable components (if design only)
+
+Goal: Build a scalable UI/UX system that reflects the AI-powered crypto-tech identity of StayX and appeals to ambitious digital-native users.

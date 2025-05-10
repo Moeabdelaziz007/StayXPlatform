@@ -17,8 +17,8 @@ interface NavItemProps {
 const NavItem = ({ icon, label, href, active }: NavItemProps) => {
   return (
     <Link href={href}>
-      <a className={cn(
-        "flex items-center px-4 py-3 text-gray-light rounded-lg transition-colors duration-200 group",
+      <div className={cn(
+        "flex items-center px-4 py-3 text-gray-light rounded-lg transition-colors duration-200 group cursor-pointer",
         active ? "bg-dark-lighter" : "hover:bg-dark-lighter"
       )}>
         <i className={cn(
@@ -27,7 +27,7 @@ const NavItem = ({ icon, label, href, active }: NavItemProps) => {
           active ? "text-neon-green" : "text-gray-medium group-hover:text-neon-green transition-colors duration-200"
         )}></i>
         <span>{label}</span>
-      </a>
+      </div>
     </Link>
   );
 };
@@ -50,8 +50,9 @@ const SideNavigation = () => {
     )}>
       {/* Logo */}
       <div className="flex items-center justify-center h-20 border-b border-[#2A2A2A]">
-        <h1 className="text-2xl font-bold font-poppins tracking-wider text-white">
-          <span className="text-neon-green neon-text">Stay</span>X
+        <h1 className="text-3xl font-bold font-poppins tracking-wider text-white">
+          <span className="text-neon-green neon-text">Stay</span>
+          <span className="text-white">X</span>
         </h1>
       </div>
       
