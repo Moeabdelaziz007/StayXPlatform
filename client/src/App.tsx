@@ -16,6 +16,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import UIShowcase from "@/pages/UIShowcase";
 import AI from "@/pages/AI";
+import SimpleAI from "@/pages/SimpleAI";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/ui" component={UIShowcase} />
       <Route path="/ai" component={AI} />
+      <Route path="/simple-ai" component={SimpleAI} />
       <Route component={NotFound} />
     </Switch>
   );
