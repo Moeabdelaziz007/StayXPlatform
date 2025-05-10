@@ -83,16 +83,7 @@ export const signInWithGoogle = async () => {
   }
 };
 
-export const signInAsGuest = async () => {
-  try {
-    const result = await signInAnonymously(auth);
-    trackUserLogin("guest");
-    return result;
-  } catch (error) {
-    console.error("Error signing in as guest:", error);
-    throw error;
-  }
-};
+
 
 export const signInWithGithub = async () => {
   try {
