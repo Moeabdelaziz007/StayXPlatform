@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import SideNavigation from "@/components/layout/SideNavigation";
-import MobileHeader from "@/components/layout/MobileHeader";
+import TopBar from "@/components/layout/TopBar";
 import Footer from "@/components/layout/Footer";
 import { useUI } from "@/context/UIContext";
 import { useLocation } from "wouter";
@@ -32,7 +32,7 @@ const Layout = ({ children, title }: LayoutProps) => {
       <SideNavigation />
       
       <main className="flex-1 overflow-x-hidden overflow-y-auto relative">
-        <MobileHeader />
+        <TopBar title={title} />
         
         <div className="p-6 space-y-6">
           {children}
