@@ -102,6 +102,13 @@ const SideNavigation = () => {
           />
           
           <NavItem 
+            icon="ri-brain-line" 
+            label="AI Features" 
+            href="/ai" 
+            active={location === "/ai"}
+          />
+          
+          <NavItem 
             icon="ri-palette-line" 
             label="UI Showcase" 
             href="/ui" 

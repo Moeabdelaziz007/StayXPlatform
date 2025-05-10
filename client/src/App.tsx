@@ -15,6 +15,7 @@ import Messages from "@/pages/Messages";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import UIShowcase from "@/pages/UIShowcase";
+import AI from "@/pages/AI";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/ui" component={UIShowcase} />
+      <Route path="/ai" component={AI} />
       <Route component={NotFound} />
     </Switch>
   );
